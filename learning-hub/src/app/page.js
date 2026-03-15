@@ -69,6 +69,12 @@ export default function Home() {
         </button>
       </div>
 
+      {/* Mobile Backdrop Overlay */}
+      <div 
+        className={`mobile-backdrop ${mobileMenuOpen ? 'open' : ''}`}
+        onClick={() => setMobileMenuOpen(false)}
+      />
+
       {/* Glassmorphic Sidebar */}
       <nav className={`glass-panel sidebar animate-fade-in ${mobileMenuOpen ? 'open' : ''}`}>
         <div className="sidebar-header">

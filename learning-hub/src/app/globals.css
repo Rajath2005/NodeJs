@@ -43,6 +43,7 @@ body {
 .app-container {
   display: flex;
   height: 100vh;
+  height: 100dvh;
   padding: 24px;
   gap: 24px;
 }
@@ -201,6 +202,9 @@ body {
 .mobile-header {
   display: none;
 }
+.mobile-backdrop {
+  display: none;
+}
 
 @media (max-width: 800px) {
   .app-container {
@@ -221,6 +225,7 @@ body {
     padding: 16px;
     border-radius: 12px;
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    z-index: 10;
   }
 
   .mobile-header h1 {
@@ -244,41 +249,66 @@ body {
     padding: 4px;
   }
 
-  /* Sidebar transitions to a mobile overlay */
-  .sidebar {
+  .mobile-backdrop {
+    display: block;
     position: fixed;
-    top: 80px;
-    left: 12px;
-    right: 12px;
-    bottom: 12px;
-    width: auto;
-    z-index: 50;
-    transform: translateY(-20px);
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 40;
+    transition: opacity 0.3s ease;
     opacity: 0;
     pointer-events: none;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    /* Make the mobile sidebar less transparent so text beneath doesn't bleed through */
-    background: rgba(10, 10, 15, 0.95);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(4px);
   }
 
-  .sidebar.open {
-    transform: translateY(0);
+  .mobile-backdrop.open {
     opacity: 1;
     pointer-events: all;
   }
-  
-  /* Hide the redundant desktop sidebar header on mobile */
-  .sidebar-header {
-    display: none;
+
+  /* Sidebar transitions to a mobile overlay */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    max-width: 85vw;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    background: rgba(10, 10, 15, 0.98);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-radius: 0 16px 16px 0;
+    border: none;
+    border-right: 1px solid var(--border-glass);
+    margin: 0;
+    padding-top: 24px;
+    opacity: 1;
+    pointer-events: none;
   }
 
-  /* Main pane stretches beneath mobile banner */
+  .sidebar.open {
+    transform: translateX(0);
+    pointer-events: all;
+  }
+  
+  .sidebar-header {
+    display: block;
+    margin-bottom: 24px;
+  }
+
+  .sidebar-header h1 {
+    font-size: 1.25rem;
+  }
+
+  /* Main pane flexes to fill screen */
   .main-content {
     flex: 1;
     padding: 16px;
-    height: calc(100vh - 100px); /* Adjust for header */
+    height: auto;
+    min-height: 0;
   }
 
   .content-header h2 {
@@ -292,10 +322,12 @@ body {
   }
 
   .code-container {
-    padding: 16px;
+    padding: 12px;
   }
 
   .code-container pre {
     font-size: 0.85rem;
+    white-space: pre-wrap;
+    word-break: break-all;
   }
 }
