@@ -6,6 +6,7 @@ export default function Home() {
   const [files, setFiles] = useState([]);
   const [activeFile, setActiveFile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // Mobile menu toggle state
 
   // Fetch the local node js files through our Next.js API route
   useEffect(() => {
@@ -48,27 +49,47 @@ export default function Home() {
     return file.content;
   };
 
+  const handleFileSelect = (file) => {
+    setActiveFile(file);
+    setMobileMenuOpen(false); // Close sidebar on mobile when file is selected
+  }
+
   return (
     <div className="app-container">
-      {/* Glassmorphic Sidebar */}
-      <nav className="glass-panel sidebar animate-fade-in">
+      {/* Mobile Top Header (Only visible on small screens) */}
+      <div className="mobile-header">
         <h1>Learning Hub</h1>
-        <p>Your local Node.js playground</p>
+        <button className="menu-toggle" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+           {/* Hamburger Icon */}
+           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      {/* Glassmorphic Sidebar */}
+      <nav className={`glass-panel sidebar animate-fade-in ${mobileMenuOpen ? 'open' : ''}`}>
+        <div className="sidebar-header">
+          <h1>Learning Hub</h1>
+          <p>Your local Node.js playground</p>
+        </div>
 
         <div className="file-list">
           {loading ? (
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", padding: "0 12px" }}>
               Loading files...
             </p>
           ) : files.length === 0 ? (
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", padding: "0 12px" }}>
               No .js files found.
             </p>
           ) : (
             files.map((file) => (
               <button
                 key={file.name}
-                onClick={() => setActiveFile(file)}
+                onClick={() => handleFileSelect(file)}
                 className={`file-btn ${
                   activeFile?.name === file.name ? "active" : ""
                 }`}
@@ -119,6 +140,8 @@ export default function Home() {
               justifyContent: "center",
               color: "var(--text-secondary)",
               fontFamily: "var(--font-mono)",
+              textAlign: "center",
+              padding: "20px"
             }}
           >
             {loading ? "Initializing workspace..." : "Select a file to begin learning"}
