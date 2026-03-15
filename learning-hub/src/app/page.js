@@ -27,20 +27,56 @@ export default function Home() {
     fetchFiles();
   }, []);
 
-  // Helper to add simple syntax highlighting for comments
+  // Helper to add advanced syntax highlighting for JavaScript files
   const renderContent = (file) => {
     if (!file || !file.content) return null;
     
-    // If it's a JS file, parse line by line to highlight comments
     if (file.name.endsWith(".js")) {
       const lines = file.content.split("\n");
+      
       return lines.map((line, index) => {
-        // Simple check for single-line comments
-        const isComment = line.trim().startsWith("//");
+        // 1. Comments (Entire line formatting)
+        if (line.trim().startsWith("//")) {
+          return (
+            <div key={index} className="code-comment">
+              {line || " "}
+            </div>
+          );
+        }
+
+        // 2. Syntax parsing for standard executable lines
+        let formattedLine = line;
+
+        // Keywords
+        const keywords = ['const ', 'let ', 'var ', 'function ', 'return ', 'require(', 'module.exports'];
+        keywords.forEach(kw => {
+          // Careful replacement to avoid breaking HTML we inject
+          if (line.includes(kw)) {
+             formattedLine = formattedLine.replace(new RegExp(`\\b${kw.replace('(', '\\(')}\\b`, 'g'), `<span class="code-keyword">${kw}</span>`);
+          }
+        });
+
+        // Built-ins
+        const builtIns = ['console', 'path', 'os', 'cp', 'fs'];
+        builtIns.forEach(bi => {
+            formattedLine = formattedLine.replace(new RegExp(`\\b${bi}\\b`, 'g'), `<span class="code-built-in">${bi}</span>`);
+        });
+
+        // Strings (Single quotes)
+        formattedLine = formattedLine.replace(/'([^']+)'/g, '<span class="code-string">\'$1\'</span>');
+        
+        // Strings (Double quotes)
+        formattedLine = formattedLine.replace(/"([^"]+)"/g, '<span class="code-string">"$1"</span>');
+
+        // Numbers
+        formattedLine = formattedLine.replace(/\b(\d+)\b/g, '<span class="code-number">$1</span>');
+
         return (
-          <div key={index} className={isComment ? "code-comment" : "code-line"}>
-            {line || " "}
-          </div>
+          <div 
+            key={index} 
+            className="code-line" 
+            dangerouslySetInnerHTML={{ __html: formattedLine || " " }} 
+          />
         );
       });
     }

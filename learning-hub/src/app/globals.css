@@ -198,6 +198,22 @@ body {
   opacity: 0.9;
 }
 
+.code-keyword {
+  color: #c678dd; /* Purple for keywords like const, let, function */
+}
+
+.code-built-in {
+  color: #e5c07b; /* Yellow for built-ins like console, Math */
+}
+
+.code-string {
+  color: #98c379; /* Light green for strings */
+}
+
+.code-number {
+  color: #d19a66; /* Orange for numbers */
+}
+
 /* Mobile Specific Styles */
 .mobile-header {
   display: none;
@@ -225,7 +241,7 @@ body {
     padding: 16px;
     border-radius: 12px;
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-    z-index: 10;
+    z-index: 100;
   }
 
   .mobile-header h1 {
@@ -254,7 +270,7 @@ body {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(0, 0, 0, 0.6);
-    z-index: 40;
+    z-index: 140;
     transition: opacity 0.3s ease;
     opacity: 0;
     pointer-events: none;
@@ -274,7 +290,7 @@ body {
     bottom: 0;
     width: 280px;
     max-width: 85vw;
-    z-index: 50;
+    z-index: 150;
     transform: translateX(-100%);
     transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     background: rgba(10, 10, 15, 0.98);
