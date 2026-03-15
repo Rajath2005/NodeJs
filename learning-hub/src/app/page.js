@@ -26,6 +26,28 @@ export default function Home() {
     fetchFiles();
   }, []);
 
+  // Helper to add simple syntax highlighting for comments
+  const renderContent = (file) => {
+    if (!file || !file.content) return null;
+    
+    // If it's a JS file, parse line by line to highlight comments
+    if (file.name.endsWith(".js")) {
+      const lines = file.content.split("\n");
+      return lines.map((line, index) => {
+        // Simple check for single-line comments
+        const isComment = line.trim().startsWith("//");
+        return (
+          <div key={index} className={isComment ? "code-comment" : "code-line"}>
+            {line || " "}
+          </div>
+        );
+      });
+    }
+
+    // Otherwise, return standard text
+    return file.content;
+  };
+
   return (
     <div className="app-container">
       {/* Glassmorphic Sidebar */}
@@ -84,8 +106,8 @@ export default function Home() {
             </div>
             
             <div className="code-container">
-              {/* Using a pre tag for simple, beautiful code display */}
-              <pre>{activeFile.content}</pre>
+              {/* Highlighted code display */}
+              <pre>{renderContent(activeFile)}</pre>
             </div>
           </>
         ) : (
