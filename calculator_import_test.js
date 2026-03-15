@@ -1,8 +1,8 @@
 // This file demonstrates how to import and use a custom module (our calculator).
 
-// We use the 'require' function with a relative path ('./calculator') to import 
+// We use the 'require' function with a relative path ('./calculator_module') to import 
 // the module we made. We store its exported object in the constant 'calculator'.
-const calculator = require('./calculator');
+const calculator = require('./calculator_module');
 
 // Below are commented-out basic JavaScript console logs and function examples:
 // console.log('Iam learning Node js with Scaler');

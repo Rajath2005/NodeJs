@@ -8,6 +8,6 @@ const cp = require('child_process');
 // to open a new tab in the Chrome browser with the specified URL.
 // cp.execSync('start chrome https://rajathkiran.netlify.app/')
 
-// We use 'execSync' to run another Node.js script ('node test.js') synchronously.
-// It waits for 'test.js' to finish, captures its output, and prints it here.
-console.log('output ' + cp.execSync('node test.js'));
+// We use 'execSync' to run another Node.js script ('node calculator_import_test.js') synchronously.
+// It waits for 'calculator_import_test.js' to finish, captures its output, and prints it here.
+console.log('output ' + cp.execSync('node calculator_import_test.js'));
