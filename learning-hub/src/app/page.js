@@ -1,0 +1,108 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+export default function Home() {
+  const [files, setFiles] = useState([]);
+  const [activeFile, setActiveFile] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch the local node js files through our Next.js API route
+  useEffect(() => {
+    async function fetchFiles() {
+      try {
+        const response = await fetch("/api/files");
+        const data = await response.json();
+        setFiles(data);
+        if (data.length > 0) {
+          setActiveFile(data[0]); // Default open the first file
+        }
+      } catch (error) {
+        console.error("Error loading files:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchFiles();
+  }, []);
+
+  return (
+    <div className="app-container">
+      {/* Glassmorphic Sidebar */}
+      <nav className="glass-panel sidebar animate-fade-in">
+        <h1>Learning Hub</h1>
+        <p>Your local Node.js playground</p>
+
+        <div className="file-list">
+          {loading ? (
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>
+              Loading files...
+            </p>
+          ) : files.length === 0 ? (
+            <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem" }}>
+              No .js files found.
+            </p>
+          ) : (
+            files.map((file) => (
+              <button
+                key={file.name}
+                onClick={() => setActiveFile(file)}
+                className={`file-btn ${
+                  activeFile?.name === file.name ? "active" : ""
+                }`}
+              >
+                {/* SVG Icon for JS/TXT file */}
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+                  <polyline points="13 2 13 9 20 9" />
+                </svg>
+                {file.name}
+              </button>
+            ))
+          )}
+        </div>
+      </nav>
+
+      {/* Main Content Area */}
+      <main className="glass-panel main-content animate-fade-in" style={{ animationDelay: "0.1s" }}>
+        {activeFile ? (
+          <>
+            <div className="content-header">
+              <h2>{activeFile.name}</h2>
+              <span className="badge">
+                {activeFile.name.endsWith(".js") ? "JavaScript" : "Text Data"}
+              </span>
+            </div>
+            
+            <div className="code-container">
+              {/* Using a pre tag for simple, beautiful code display */}
+              <pre>{activeFile.content}</pre>
+            </div>
+          </>
+        ) : (
+          <div
+            style={{
+              display: "flex",
+              height: "100%",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "var(--text-secondary)",
+              fontFamily: "var(--font-mono)",
+            }}
+          >
+            {loading ? "Initializing workspace..." : "Select a file to begin learning"}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
