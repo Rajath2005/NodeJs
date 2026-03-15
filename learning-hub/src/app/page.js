@@ -2,24 +2,69 @@
 
 import { useEffect, useState } from "react";
 
+// Pure React tokenizer - no dangerouslySetInnerHTML, no broken regex
+function tokenizeLine(line) {
+  const tokens = [];
+  let remaining = line;
+  let key = 0;
+
+  const patterns = [
+    { regex: /'[^']*'/, className: "tok-string" },
+    { regex: /"[^"]*"/, className: "tok-string" },
+    { regex: /\b(const|let|var|function|return|if|else|try|catch|finally|async|await|new|throw|class|import|from|export|default)\b/, className: "tok-keyword" },
+    { regex: /\b(require|module\.exports|module)\b/, className: "tok-keyword" },
+    { regex: /\b(console|path|os|cp|fs|process|Math|JSON|Promise|Array|Object|String|Number|Boolean|Error|Buffer|global)\b/, className: "tok-builtin" },
+    { regex: /\.\b(log|join|resolve|extname|basename|dirname|readFileSync|readdirSync|statSync|isFile|execSync|arch|platform|networkInterfaces|cpus|freemem|totalmem|uptime|userInfo|cwd)\b/, className: "tok-method" },
+    { regex: /\b\d+\.?\d*\b/, className: "tok-number" },
+  ];
+
+  while (remaining.length > 0) {
+    let earliest = null;
+    let earliestIndex = remaining.length;
+    let matchedPattern = null;
+
+    for (const pat of patterns) {
+      const match = remaining.match(pat.regex);
+      if (match && match.index < earliestIndex) {
+        earliest = match;
+        earliestIndex = match.index;
+        matchedPattern = pat;
+      }
+    }
+
+    if (earliest && matchedPattern) {
+      // Push any plain text before the match
+      if (earliestIndex > 0) {
+        tokens.push(<span key={key++} className="tok-plain">{remaining.substring(0, earliestIndex)}</span>);
+      }
+      // Push the highlighted token
+      tokens.push(<span key={key++} className={matchedPattern.className}>{earliest[0]}</span>);
+      remaining = remaining.substring(earliestIndex + earliest[0].length);
+    } else {
+      // No more matches, push the rest as plain text
+      tokens.push(<span key={key++} className="tok-plain">{remaining}</span>);
+      break;
+    }
+  }
+
+  return tokens;
+}
+
 export default function Home() {
   const [files, setFiles] = useState([]);
   const [activeFile, setActiveFile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false); // Mobile menu toggle state
+  const [menuOpen, setMenuOpen] = useState(false);
 
-  // Fetch the local node js files through our Next.js API route
   useEffect(() => {
     async function fetchFiles() {
       try {
-        const response = await fetch("/api/files");
-        const data = await response.json();
+        const res = await fetch("/api/files");
+        const data = await res.json();
         setFiles(data);
-        if (data.length > 0) {
-          setActiveFile(data[0]); // Default open the first file
-        }
-      } catch (error) {
-        console.error("Error loading files:", error);
+        if (data.length > 0) setActiveFile(data[0]);
+      } catch (err) {
+        console.error("Error loading files:", err);
       } finally {
         setLoading(false);
       }
@@ -27,169 +72,100 @@ export default function Home() {
     fetchFiles();
   }, []);
 
-  // Helper to add advanced syntax highlighting for JavaScript files
-  const renderContent = (file) => {
+  const renderCode = (file) => {
     if (!file || !file.content) return null;
-    
-    if (file.name.endsWith(".js")) {
-      const lines = file.content.split("\n");
-      
-      return lines.map((line, index) => {
-        // 1. Comments (Entire line formatting)
-        if (line.trim().startsWith("//")) {
-          return (
-            <div key={index} className="code-comment">
-              {line || " "}
-            </div>
-          );
-        }
 
-        // 2. Syntax parsing for standard executable lines
-        let formattedLine = line;
+    const lines = file.content.split("\n");
 
-        // Keywords
-        const keywords = ['const ', 'let ', 'var ', 'function ', 'return ', 'require(', 'module.exports'];
-        keywords.forEach(kw => {
-          // Careful replacement to avoid breaking HTML we inject
-          if (line.includes(kw)) {
-             formattedLine = formattedLine.replace(new RegExp(`\\b${kw.replace('(', '\\(')}\\b`, 'g'), `<span class="code-keyword">${kw}</span>`);
-          }
-        });
-
-        // Built-ins
-        const builtIns = ['console', 'path', 'os', 'cp', 'fs'];
-        builtIns.forEach(bi => {
-            formattedLine = formattedLine.replace(new RegExp(`\\b${bi}\\b`, 'g'), `<span class="code-built-in">${bi}</span>`);
-        });
-
-        // Strings (Single quotes)
-        formattedLine = formattedLine.replace(/'([^']+)'/g, '<span class="code-string">\'$1\'</span>');
-        
-        // Strings (Double quotes)
-        formattedLine = formattedLine.replace(/"([^"]+)"/g, '<span class="code-string">"$1"</span>');
-
-        // Numbers
-        formattedLine = formattedLine.replace(/\b(\d+)\b/g, '<span class="code-number">$1</span>');
-
-        return (
-          <div 
-            key={index} 
-            className="code-line" 
-            dangerouslySetInnerHTML={{ __html: formattedLine || " " }} 
-          />
-        );
-      });
-    }
-
-    // Otherwise, return standard text
-    return file.content;
+    return lines.map((line, i) => {
+      // Comment lines
+      if (line.trim().startsWith("//")) {
+        return <div key={i} className="line comment-line">{line || "\u00A0"}</div>;
+      }
+      // Code lines with tokenized highlighting
+      return <div key={i} className="line code-line">{tokenizeLine(line) || "\u00A0"}</div>;
+    });
   };
 
-  const handleFileSelect = (file) => {
+  const selectFile = (file) => {
     setActiveFile(file);
-    setMobileMenuOpen(false); // Close sidebar on mobile when file is selected
-  }
+    setMenuOpen(false);
+  };
 
   return (
-    <div className="app-container">
-      {/* Mobile Top Header (Only visible on small screens) */}
-      <div className="mobile-header">
-        <h1>Learning Hub</h1>
-        <button className="menu-toggle" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-           {/* Hamburger Icon */}
-           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="3" y1="12" x2="21" y2="12"></line>
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <line x1="3" y1="18" x2="21" y2="18"></line>
+    <>
+      {/* ── Mobile Header ── */}
+      <header className="mob-header">
+        <h1 className="gradient-text">Learning Hub</h1>
+        <button className="mob-menu-btn" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            {menuOpen ? (
+              <>
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </>
+            ) : (
+              <>
+                <line x1="4" y1="7" x2="20" y2="7" />
+                <line x1="4" y1="12" x2="20" y2="12" />
+                <line x1="4" y1="17" x2="20" y2="17" />
+              </>
+            )}
           </svg>
         </button>
-      </div>
+      </header>
 
-      {/* Mobile Backdrop Overlay */}
-      <div 
-        className={`mobile-backdrop ${mobileMenuOpen ? 'open' : ''}`}
-        onClick={() => setMobileMenuOpen(false)}
-      />
+      {/* ── Backdrop (mobile only) ── */}
+      {menuOpen && <div className="mob-backdrop" onClick={() => setMenuOpen(false)} />}
 
-      {/* Glassmorphic Sidebar */}
-      <nav className={`glass-panel sidebar animate-fade-in ${mobileMenuOpen ? 'open' : ''}`}>
-        <div className="sidebar-header">
-          <h1>Learning Hub</h1>
-          <p>Your local Node.js playground</p>
-        </div>
+      <div className="shell">
+        {/* ── Sidebar ── */}
+        <aside className={`sidebar ${menuOpen ? "sidebar--open" : ""}`}>
+          <div className="sidebar__head">
+            <h1 className="gradient-text">Learning Hub</h1>
+            <p>Your Node.js playground</p>
+          </div>
 
-        <div className="file-list">
-          {loading ? (
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", padding: "0 12px" }}>
-              Loading files...
-            </p>
-          ) : files.length === 0 ? (
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", padding: "0 12px" }}>
-              No .js files found.
-            </p>
-          ) : (
-            files.map((file) => (
+          <nav className="sidebar__list">
+            {loading && <p className="sidebar__hint">Loading…</p>}
+            {!loading && files.length === 0 && <p className="sidebar__hint">No files found.</p>}
+            {files.map((f) => (
               <button
-                key={file.name}
-                onClick={() => handleFileSelect(file)}
-                className={`file-btn ${
-                  activeFile?.name === file.name ? "active" : ""
-                }`}
+                key={f.name}
+                className={`sidebar__btn ${activeFile?.name === f.name ? "sidebar__btn--active" : ""}`}
+                onClick={() => selectFile(f)}
               >
-                {/* SVG Icon for JS/TXT file */}
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
                   <polyline points="13 2 13 9 20 9" />
                 </svg>
-                {file.name}
+                <span>{f.name}</span>
               </button>
-            ))
-          )}
-        </div>
-      </nav>
+            ))}
+          </nav>
+        </aside>
 
-      {/* Main Content Area */}
-      <main className="glass-panel main-content animate-fade-in" style={{ animationDelay: "0.1s" }}>
-        {activeFile ? (
-          <>
-            <div className="content-header">
-              <h2>{activeFile.name}</h2>
-              <span className="badge">
-                {activeFile.name.endsWith(".js") ? "JavaScript" : "Text Data"}
-              </span>
+        {/* ── Main viewer ── */}
+        <main className="viewer">
+          {activeFile ? (
+            <>
+              <div className="viewer__head">
+                <h2 className="viewer__title">{activeFile.name}</h2>
+                <span className="viewer__badge">
+                  {activeFile.name.endsWith(".js") ? "JavaScript" : "Text"}
+                </span>
+              </div>
+              <div className="viewer__code">
+                <pre>{renderCode(activeFile)}</pre>
+              </div>
+            </>
+          ) : (
+            <div className="viewer__empty">
+              {loading ? "Loading…" : "Select a file to begin learning"}
             </div>
-            
-            <div className="code-container">
-              {/* Highlighted code display */}
-              <pre>{renderContent(activeFile)}</pre>
-            </div>
-          </>
-        ) : (
-          <div
-            style={{
-              display: "flex",
-              height: "100%",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "var(--text-secondary)",
-              fontFamily: "var(--font-mono)",
-              textAlign: "center",
-              padding: "20px"
-            }}
-          >
-            {loading ? "Initializing workspace..." : "Select a file to begin learning"}
-          </div>
-        )}
-      </main>
-    </div>
+          )}
+        </main>
+      </div>
+    </>
   );
 }
